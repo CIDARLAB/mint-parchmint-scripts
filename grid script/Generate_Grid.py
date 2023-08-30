@@ -186,8 +186,6 @@ for col in range(1,gridSize+1):
                 sinks = tempTargetList, 
                 layer_id = control_layer.ID
         ))
-        
-    #Connect valves to control port
 
 
 #Connect exit port to last row of cell traps
@@ -216,12 +214,7 @@ fileName = 'grid_' + str(gridSize) + '.uf'
 with open(fileName, 'w') as file:
     file.write(device.to_MINT())
 
-print("Code generation complete.")
-
-
 with open('grid_' + str(gridSize) + ".json", 'w') as f:
     json.dump(device.device.to_parchmint_v1_2(), f, indent=2)
 
-
-for connection in flowConnections:
-    print(connection.name)
+print("Complete")
