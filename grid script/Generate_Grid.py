@@ -1,6 +1,8 @@
 from pymint import MINTDevice, MINTLayerType
 from parchmint.target import Target
 from parchmint import Device
+from pymint.constraints.arrayconstraint import ArrayConstraint
+from pymint.constraints.orientationconstraint import OrientationConstraint, ComponentOrientation
 import json
 
 numFlowConnections = 0
@@ -25,6 +27,11 @@ trap_params = {
     "chamberWidth": 100,
     "chamberLength": 100,
     "channelWidth": 100
+}
+
+tree_params = {
+    "spacing": 1200,
+    "flowChannelWidth": 100 
 }
 
 flow_connection_params = {
@@ -54,25 +61,51 @@ port1 = device.add_terminal(name="p1", pin_number=1 , layer_id=flow_layer.ID)
 port2 = device.add_terminal(name="p2", pin_number=1 , layer_id=flow_layer.ID)
 
 # Create the square cell trap components and store them in an array
-
 for i in range(1,gridSize**2+1):
-    sctList.append(device.create_mint_component(name="ct"+str(i), technology="SQUARE CELL TRAP", params=trap_params, layer_ids=[flow_layer.ID]))
+    sctList.append(device.create_mint_component(
+        name="ct"+str(i), 
+        technology="SQUARE CELL TRAP", 
+        params=trap_params, 
+        layer_ids=[flow_layer.ID])
+    )
 
-#Connect port to first row of cell traps
-entryPortSinks = []
-for row in range(1,gridSize+1):
-    entryPortSinks.append(Target(sctList[row-1].ID,port="4"))
+#Create the trees
+tree1 = device.create_mint_component(
+    name="tree1",
+    technology="TREE",
+    params=tree_params,
+    layer_ids=[flow_layer.ID]
+)
+tree2 = device.create_mint_component(
+    name="tree2",
+    technology="TREE",
+    params=tree_params,
+    layer_ids=[flow_layer.ID]
+)
 
+#Connect tree1 to port1 
 numFlowConnections+=1
 
 flowConnections.append(device.create_mint_connection(
     name = "c"+str(numFlowConnections),
-    technology="CONNECTION",
+    technology = "CONNECTION",
     params = flow_connection_params,
     source = Target(port1.component.ID),
-    sinks = entryPortSinks,
+    sinks = [Target(tree1.ID,port=1)],
     layer_id = flow_layer.ID
 ))
+
+#Connect tree1 to first column of square cell traps
+for row in range(1,gridSize+1):
+    numFlowConnections+=1
+    flowConnections.append(device.create_mint_connection(
+        name = "c"+str(numFlowConnections),
+        technology = "CONNECTION",
+        params = flow_connection_params,
+        source = Target(tree1.ID,port=1+row),
+        sinks = [Target(sctList[row-1].ID,port=4)],
+        layer_id = flow_layer.ID
+    ))
 
 
 
@@ -162,6 +195,8 @@ for col in range(1,gridSize+1):
                 connection = flowConnections[numFlowConnections-1]
             ))
 
+
+
         #Create control port
         horizontalControlPorts.append(device.add_terminal(
             name="hcp" + str(col),
@@ -188,6 +223,31 @@ for col in range(1,gridSize+1):
         ))
 
 
+#Connect last row of square cell traps to tree2
+for row in range(1,gridSize+1):
+    flowConnections.append(device.create_mint_connection(
+        name = "c"+str(numFlowConnections),
+        technology = "CONNECTION",
+        params = flow_connection_params,
+        source = Target(sctList[(gridSize)*(gridSize-1)+row-1].ID,port="2"),
+        sinks = [Target(tree2.ID,port="row")],
+        layer_id = flow_layer.ID
+    ))
+
+#Connect tree2 to port2
+numFlowConnections+=1
+flowConnections.append(device.create_mint_connection(
+    name = "c"+str(numFlowConnections),
+    technology = "CONNECTION",
+    params = flow_connection_params,
+    source = Target(tree2.ID,port=gridSize+1),
+    sinks = [Target(port2.component.ID)],
+    layer_id = flow_layer.ID
+))
+
+
+
+
 #Connect exit port to last row of cell traps
 exitPortSinks = []
 for row in range(1,gridSize+1):
@@ -206,8 +266,19 @@ flowConnections.append(device.create_mint_connection(
 
 
 #########################################################################################################################################################
+#Constraints
+cpb1 = ArrayConstraint(verticalControlPorts)
+cpb2 = ArrayConstraint(horizontalControlPorts)
+
+device.add_constraint(cpb1)
+device.add_constraint(cpb2)
 
 
+#Make the tree horizontal
+oc = OrientationConstraint()
+oc.add_component_orientation_pair(tree1,ComponentOrientation.HORIZONTAL)
+oc.add_component_orientation_pair(tree2,ComponentOrientation.HORIZONTAL)
+device.add_constraint(oc)
 
 #########################################################################################################################################################
 fileName = 'grid_' + str(gridSize) + '.uf'
