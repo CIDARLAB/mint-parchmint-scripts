@@ -58,7 +58,7 @@ device = MINTDevice(name="grid_" + str(gridSize) + "_device")
 flow_layer = device.create_mint_layer(ID="flow", name_postfix="FLOW", group=None, layer_type=MINTLayerType.FLOW)
 
 # Create the control layer
-control_layer = device.create_mint_layer(ID="flow", name_postfix="CONTROL", group=None, layer_type=MINTLayerType.CONTROL)
+control_layer = device.create_mint_layer(ID="control", name_postfix="CONTROL", group=None, layer_type=MINTLayerType.CONTROL)
 
 # Create the ports on the flow layer
 port1 = device.add_terminal(name="p1", pin_number=1 , layer_id=flow_layer.ID)
