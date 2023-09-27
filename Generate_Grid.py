@@ -21,6 +21,8 @@ valves = []
 verticalControlPorts = []
 horizontalControlPorts = []
 
+#Prompt user for grid size
+gridSize = int(input("Please enter a grid size: "))
 
 #Set component parameters
 trap_params = {
@@ -29,9 +31,19 @@ trap_params = {
     "channelWidth": 100
 }
 
-tree_params = {
+tree_in_params = {
     "spacing": 1200,
-    "flowChannelWidth": 100 
+    "flowChannelWidth": 100,
+    "in": 1,
+    "out": gridSize
+}
+
+tree_out_params = {
+    "spacing": 1200,
+    "flowChannelWidth": 100,
+    "in": gridSize,
+    "out": 1
+
 }
 
 flow_connection_params = {
@@ -46,9 +58,6 @@ valve_params = {
     "w": 300,
     "l": 100
 }
-
-#Prompt user for grid size
-gridSize = int(input("Please enter a grid size: "))
 
 # Create the MINTDevice instance with a name
 device = MINTDevice(name="grid_" + str(gridSize) + "_device")
@@ -77,13 +86,13 @@ for i in range(1,gridSize**2+1):
 tree1 = device.create_mint_component(
     name="m1",
     technology="TREE",
-    params=tree_params,
+    params=tree_in_params,
     layer_ids=[flow_layer.ID]
 )
 tree2 = device.create_mint_component(
     name="m2",
     technology="TREE",
-    params=tree_params,
+    params=tree_out_params,
     layer_ids=[flow_layer.ID]
 )
 
