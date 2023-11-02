@@ -24,6 +24,10 @@ horizontalControlPorts = []
 #Prompt user for grid size
 gridSize = int(input("Please enter a grid size: "))
 
+port_params = {
+    "radius": 1980
+}
+
 #Set component parameters
 trap_params = {
     "chamberWidth": 100,
@@ -70,8 +74,19 @@ flow_layer = device.create_mint_layer(ID="flow", name_postfix="FLOW", group=None
 control_layer = device.create_mint_layer(ID="control", name_postfix="CONTROL", group=None, layer_type=MINTLayerType.CONTROL)
 
 # Create the ports on the flow layer
-port1 = device.add_terminal(name="p1", pin_number=1 , layer_id=flow_layer.ID)
-port2 = device.add_terminal(name="p2", pin_number=1 , layer_id=flow_layer.ID)
+port1 = device.create_mint_component(
+    name = "p1",
+    technology = "PORT",
+    params = port_params,
+    layer_ids = [flow_layer.ID]
+)
+
+port2 = device.create_mint_component(
+    name = "p2",
+    technology = "PORT",
+    params = port_params,
+    layer_ids = [flow_layer.ID]
+)
 
 # Create the square cell trap components and store them in an array
 for i in range(1,gridSize**2+1):
@@ -103,7 +118,7 @@ flowConnections.append(device.create_mint_connection(
     name = "c"+str(numFlowConnections),
     technology = "CONNECTION",
     params = flow_connection_params,
-    source = Target(port1.component.ID),
+    source = Target(port1.ID),
     sinks = [Target(tree1.ID,port=1)],
     layer_id = flow_layer.ID
 ))
@@ -155,10 +170,13 @@ for col in range(1,gridSize+1):
         
 
     #Create control port
-    verticalControlPorts.append(device.add_terminal(
+    
+    verticalControlPorts.append(device.create_mint_component(
         name="vcp" + str(col),
-        pin_number=1 ,
-        layer_id=control_layer.ID))
+        technology="PORT",
+        params=port_params,
+        layer_ids=[control_layer.ID]
+    ))
     
     #Connect valves to control port
 
@@ -172,7 +190,7 @@ for col in range(1,gridSize+1):
             name = "n"+str(numControlNets),
             technology = "CONNECTION",
             params = control_connection_params,
-            source = Target(verticalControlPorts[-1].component.ID),
+            source = Target(verticalControlPorts[-1].ID),
             sinks = tempTargetList, 
             layer_id = control_layer.ID
     ))
@@ -220,10 +238,11 @@ for col in range(1,gridSize+1):
 
 
         #Create control port
-        horizontalControlPorts.append(device.add_terminal(
-            name="hcp" + str(col),
-            pin_number=1 ,
-            layer_id=control_layer.ID
+        horizontalControlPorts.append(device.create_mint_component(
+            name = "hcp" + str(col),
+            technology = "PORT",
+            params = port_params,
+            layer_ids = [control_layer.ID]
         ))
 
         #Connect the control port to the valves on the "bottom" of grid
@@ -233,7 +252,7 @@ for col in range(1,gridSize+1):
             technology = "CONNECTION",
             params = control_connection_params,
             source = Target(valves[-1].ID),
-            sinks = [Target(horizontalControlPorts[-1].component.ID)],
+            sinks = [Target(horizontalControlPorts[-1].ID)],
             layer_id = control_layer.ID
         ))
 
@@ -257,7 +276,7 @@ flowConnections.append(device.create_mint_connection(
     technology = "CONNECTION",
     params = flow_connection_params,
     source = Target(tree2.ID,port=gridSize+1),
-    sinks = [Target(port2.component.ID)],
+    sinks = [Target(port2.ID)],
     layer_id = flow_layer.ID
 ))
 
