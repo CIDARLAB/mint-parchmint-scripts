@@ -5,18 +5,18 @@ from pymint.constraints.arrayconstraint import ArrayConstraint
 from pymint.constraints.orientationconstraint import OrientationConstraint, ComponentOrientation
 import json
 
-numFlowConnections = 0
-numControlConnections = 0
+numFlowChannels = 0
+numControlChannels = 0
 numControlNets = 0
 numValves = 0
 
 sctList = []
-flowConnections = []
-controlConnections = []
+flowChannels = []
+controlChannels = []
 controlNets = []
 valves = []
 
-#List of control ports that control the vertical and horizontal connections respectively 
+#List of control ports that control the vertical and horizontal channels respectively 
 #that connect the square cell traps
 verticalControlPorts = []
 horizontalControlPorts = []
@@ -50,11 +50,11 @@ tree_out_params = {
 
 }
 
-flow_connection_params = {
+flow_channel_params = {
     "w": 100
 }
 
-control_connection_params = {
+control_channel_params = {
     "w": 100
 }
 
@@ -112,24 +112,24 @@ tree2 = device.create_mint_component(
 )
 
 #Connect tree1 to port1 
-numFlowConnections+=1
+numFlowChannels+=1
 
-flowConnections.append(device.create_mint_connection(
-    name = "c"+str(numFlowConnections),
-    technology = "CONNECTION",
-    params = flow_connection_params,
-    source = Target(port1.ID),
+flowChannels.append(device.create_mint_connection(
+    name = "c"+str(numFlowChannels),
+    technology = "CHANNEL",
+    params = flow_channel_params,
+    source = Target(port1.ID, port=1),
     sinks = [Target(tree1.ID,port=1)],
     layer_id = flow_layer.ID
 ))
 
 #Connect tree1 to first column of square cell traps
 for row in range(1,gridSize+1):
-    numFlowConnections+=1
-    flowConnections.append(device.create_mint_connection(
-        name = "c"+str(numFlowConnections),
-        technology = "CONNECTION",
-        params = flow_connection_params,
+    numFlowChannels+=1
+    flowChannels.append(device.create_mint_connection(
+        name = "c"+str(numFlowChannels),
+        technology = "CHANNEL",
+        params = flow_channel_params,
         source = Target(tree1.ID,port=1+row),
         sinks = [Target(sctList[row-1].ID,port=4)],
         layer_id = flow_layer.ID
@@ -139,33 +139,33 @@ for row in range(1,gridSize+1):
 
 #Connect adjacent cell traps within a column and connect adjacent columns
 for col in range(1,gridSize+1):
-    #Connect cell traps within a column and place a valve on the connection
+    #Connect cell traps within a column and place a valve on the channel
     for row in range(1,gridSize):
 
-        numFlowConnections+=1
+        numFlowChannels+=1
 
         #Calculate the source and sink cell trap number
         #To access the sct, it is the sctList[sctNum-1]
         SourceSCTNum = (col-1)*gridSize+row
         SinkSCTNum = (col-1)*gridSize+row+1
 
-        flowConnections.append(device.create_mint_connection(
-            name = "c"+str(numFlowConnections),
-            technology = "CONNECTION",
-            params = flow_connection_params,
+        flowChannels.append(device.create_mint_connection(
+            name = "c"+str(numFlowChannels),
+            technology = "CHANNEL",
+            params = flow_channel_params,
             source = Target(sctList[SourceSCTNum-1].ID,port="3"),
             sinks = [Target(sctList[SinkSCTNum-1].ID,port="1")], 
             layer_id = flow_layer.ID
         ))
 
-        #Place valve on the connection we just made
+        #Place valve on the channel we just made
         numValves+=1
         valves.append(device.create_valve(
             name = "v" + str(numValves),
             technology= "VALVE",
             params = valve_params,
             layer_ids = [control_layer.ID],
-            connection = flowConnections[numFlowConnections-1]
+            connection = flowChannels[numFlowChannels-1]
         ))
         
 
@@ -183,14 +183,14 @@ for col in range(1,gridSize+1):
     tempTargetList = []
 
     for valve in valves[-(gridSize-1):]:
-        tempTargetList.append(Target(valve.ID))
+        tempTargetList.append(Target(valve.ID,port=1))
 
     numControlNets+=1
     controlNets.append(device.create_mint_connection(
             name = "n"+str(numControlNets),
-            technology = "CONNECTION",
-            params = control_connection_params,
-            source = Target(verticalControlPorts[-1].ID),
+            technology = "CHANNEL",
+            params = control_channel_params,
+            source = Target(verticalControlPorts[-1].ID,port=1),
             sinks = tempTargetList, 
             layer_id = control_layer.ID
     ))
@@ -199,39 +199,39 @@ for col in range(1,gridSize+1):
     #Connect current column to next column and place a valve on the connection
     if(col!=gridSize):
         for row in range(1,gridSize+1):
-            numFlowConnections+=1
+            numFlowChannels+=1
 
             SourceSCTNum = (col-1)*gridSize+row 
             SinkSCTNum = (col-1)*gridSize+row+gridSize
 
-            flowConnections.append(device.create_mint_connection(
-                name = "c"+str(numFlowConnections),
-                technology="CONNECTION",
-                params = flow_connection_params,
+            flowChannels.append(device.create_mint_connection(
+                name = "c"+str(numFlowChannels),
+                technology="CHANNEL",
+                params = flow_channel_params,
                 source = Target(sctList[SourceSCTNum-1].ID,port="2"),
                 sinks = [Target(sctList[SinkSCTNum-1].ID,port="4")],
                 layer_id = flow_layer.ID
             ))
 
-            #Place valve on the connection we just made
+            #Place valve on the channel we just made
             numValves+=1
             valves.append(device.create_valve(
                 name = "v" + str(numValves),
                 technology= "VALVE",
                 params = valve_params,
                 layer_ids = [control_layer.ID],
-                connection = flowConnections[numFlowConnections-1]
+                connection = flowChannels[numFlowChannels-1]
             ))
 
-            #Put connections between the valves on horizontal connections
+            #Put channels between the valves on horizontal channels
             if(row!=1):
-                numControlConnections+=1
-                controlConnections.append(device.create_mint_connection(
-                    name = "cc" + str(numControlConnections),
-                    technology = "CONNECTION",
-                    params = control_connection_params,
-                    source = Target(valves[-2].ID),
-                    sinks = [Target(valves[-1].ID)],
+                numControlChannels+=1
+                controlChannels.append(device.create_mint_connection(
+                    name = "cc" + str(numControlChannels),
+                    technology = "CHANNEL",
+                    params = control_channel_params,
+                    source = Target(valves[-2].ID,port=1),
+                    sinks = [Target(valves[-1].ID,port=1)],
                     layer_id = control_layer.ID
                 ))
                 
@@ -246,37 +246,37 @@ for col in range(1,gridSize+1):
         ))
 
         #Connect the control port to the valves on the "bottom" of grid
-        numControlConnections+=1
-        controlConnections.append(device.create_mint_connection(
-            name = "cc" + str(numControlConnections),
-            technology = "CONNECTION",
-            params = control_connection_params,
-            source = Target(valves[-1].ID),
-            sinks = [Target(horizontalControlPorts[-1].ID)],
+        numControlChannels+=1
+        controlChannels.append(device.create_mint_connection(
+            name = "cc" + str(numControlChannels),
+            technology = "CHANNEL",
+            params = control_channel_params,
+            source = Target(valves[-1].ID,port=1),
+            sinks = [Target(horizontalControlPorts[-1].ID,port=1)],
             layer_id = control_layer.ID
         ))
 
 
 #Connect last row of square cell traps to tree2
 for row in range(1,gridSize+1):
-    numFlowConnections+=1
-    flowConnections.append(device.create_mint_connection(
-        name = "c"+str(numFlowConnections),
-        technology = "CONNECTION",
-        params = flow_connection_params,
+    numFlowChannels+=1
+    flowChannels.append(device.create_mint_connection(
+        name = "c"+str(numFlowChannels),
+        technology = "CHANNEL",
+        params = flow_channel_params,
         source = Target(sctList[(gridSize)*(gridSize-1)+row-1].ID,port="2"),
         sinks = [Target(tree2.ID,port=str(row))],
         layer_id = flow_layer.ID
     ))
 
 #Connect tree2 to port2
-numFlowConnections+=1
-flowConnections.append(device.create_mint_connection(
-    name = "c"+str(numFlowConnections),
-    technology = "CONNECTION",
-    params = flow_connection_params,
+numFlowChannels+=1
+flowChannels.append(device.create_mint_connection(
+    name = "c"+str(numFlowChannels),
+    technology = "CHANNEL",
+    params = flow_channel_params,
     source = Target(tree2.ID,port=gridSize+1),
-    sinks = [Target(port2.ID)],
+    sinks = [Target(port2.ID,port=1)],
     layer_id = flow_layer.ID
 ))
 
