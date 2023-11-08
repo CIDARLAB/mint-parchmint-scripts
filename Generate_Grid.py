@@ -24,11 +24,11 @@ horizontalControlPorts = []
 #Prompt user for grid size
 gridSize = int(input("Please enter a grid size: "))
 
+#Set component parameters
 port_params = {
-    "radius": 1980
+    "portRadius": 1980
 }
 
-#Set component parameters
 trap_params = {
     "chamberWidth": 100,
     "chamberLength": 100,
@@ -51,16 +51,16 @@ tree_out_params = {
 }
 
 flow_channel_params = {
-    "w": 100
+    "channelWidth": 100
 }
 
 control_channel_params = {
-    "w": 100
+    "channelWidth": 100
 }
 
 valve_params = {
-    "w": 300,
-    "l": 100
+    "width": 300,
+    "length": 100
 }
 
 # Create the MINTDevice instance with a name
